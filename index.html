@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="sw" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ByaoConnect Studio v5.6 - PWA & Docs Editor</title>
+    
+    <!-- PWA Manifest & Theme Config -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#030712">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="byao-connect.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Maktaba ya Kutengeneza na Kusoma PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#030712',
+                        cardBg: '#0b0f19',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen w-full flex flex-col font-sans overflow-x-hidden m-0 p-0 selection:bg-red-600 selection:text-white">
+
+    <!-- Header Bar na Logo ya Byao-Connect -->
+    <header class="w-full bg-cardBg/95 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-2xl">
+        <div class="flex items-center space-x-3">
+            <!-- Logo ya App -->
+            <img src="byao-connect.png" alt="Byao-Connect Logo" class="w-9 h-9 rounded-xl object-cover border border-slate-700 shadow-md bg-slate-950" onerror="this.src='https://via.placeholder.com/40/dc2626/ffffff?text=BC'">
+            <div>
+                <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
+                    <span>📱</span> ByaoConnect PWA
+                </h1>
+                <p class="text-[10px] text-slate-400">App ya Mkononi & Docs Studio</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="installPWAApp()" id="installPWA-btn" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl shadow-lg transition animate-bounce">
+                📥 Weka kwenye Simu
+            </button>
+            <div id="toastNotification" class="hidden bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-3 py-1 rounded-full text-[10px] font-bold tracking-wide transition-all">
+                Tayari
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-slate-950 border-b border-slate-800 px-4 py-2 flex space-x-2 overflow-x-auto">
+        <button onclick="switchTab('editor')" id="tabBtn-editor" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-red-600 text-white transition shadow-md whitespace-nowrap">📝 Hariri & Docs</button>
+        <button onclick="switchTab('tools10')" id="tabBtn-tools10" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">⚡ Zana 10 za Ziada</button>
+        <button onclick="switchTab('pwasettings')" id="tabBtn-pwasettings" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap">⚙️ Mipangilio ya PWA</button>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 w-full max-w-4xl mx-auto p-4 sm:p-6 flex flex-col space-y-4 overflow-y-auto">
+        
+        <!-- MODULE 1: DOCS & PDF EDITOR -->
+        <div id="module-editor" class="space-y-4 flex flex-col flex-1">
+            <div class="bg-cardBg border border-slate-800/80 p-4 sm:p-6 rounded-2xl shadow-xl space-y-4">
+                <div class="border-b border-slate-800 pb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-red-400">📄 Mfumo wa Kuunda na Kuhariri Nyaraka</h3>
+                        <p class="text-[10px] text-slate-400">Pakia PDF, weka picha ya byao-connect.png, jedwali na uzalishe hati safi.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-lg transition cursor-pointer flex items-center gap-1.5">
+                            <span>📁</span> Pakia PDF ya Ndani
+                            <input type="file" id="uploadPdfInput" accept="application/pdf" class="hidden" onchange="loadExternalPDF(event)">
+                        </label>
+                        <button onclick="generatePDFDocument()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2.5 rounded-xl shadow-lg transition flex items-center gap-1.5">
+                            <span>📥</span> Pakua PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Vidhibiti vya Kuandika na Kuweka Data -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Kichwa cha Ripoti:</label>
+                        <input type="text" id="docTitle" value="ByaoConnect Enterprise System 2026" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-bold focus:outline-none focus:border-red-600" oninput="updateLivePreview()">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Rangi ya Kichwa:</label>
+                        <select id="docTitleColor" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-bold focus:outline-none focus:border-red-600" onchange="updateLivePreview()">
+                            <option value="text-red-500">Nyekundu (Red)</option>
+                            <option value="text-indigo-400">Bluu ya Anga (Indigo)</option>
+                            <option value="text-emerald-400">Kijani (Emerald)</option>
+                            <option value="text-amber-400">Manjano / Dhahabu (Amber)</option>
+                            <option value="text-purple-400">Zambarau (Purple)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Weka Picha / Logo:</label>
+                        <input type="file" id="imageUploadInput" accept="image/*" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-[10px] text-slate-300 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-red-600 file:text-white cursor-pointer" onchange="insertImageIntoDoc(event)">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Maudhui / Maelezo ya Hati:</label>
+                        <textarea id="docBody" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-red-600" oninput="updateLivePreview()">Hii ni hati rasmi ya ByaoConnect PWA. Inafanya kazi kwenye simu yako kama application kamili bila kuhitaji intaneti wakati wowote.</textarea>
+                    </div>
+                </div>
+
+                <!-- ENEO LA HAKIKISHO LA HATI -->
+                <div class="mt-4 border border-slate-800 rounded-xl overflow-hidden shadow-2xl bg-darkBg">
+                    <div class="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase">
+                        <span>Hakikisho la Hati (Live Preview)</span>
+                        <span class="text-emerald-400">ByaoConnect PWA Active</span>
+                    </div>
+                    
+                    <div id="pdfContentArea" class="bg-darkBg text-slate-100 p-6 sm:p-8 space-y-6 font-sans min-h-[350px]">
+                        <div class="border-b border-slate-800 pb-4 flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <img src="byao-connect.png" alt="Logo" class="w-10 h-10 rounded-xl object-cover border border-slate-700 bg-slate-950" onerror="this.style.display='none'">
+                                <div>
+                                    <h1 id="previewTitle" class="text-xl font-black uppercase tracking-tight text-red-500">BYAOCONNECT ENTERPRISE SYSTEM 2026</h1>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">Imeandaliwa na: <span class="font-bold text-slate-200">ByaoMobileSolution</span></p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-mono font-bold bg-slate-900 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-800">2026</span>
+                            </div>
+                        </div>
+
+                        <div class="py-2">
+                            <p id="previewBody" class="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">Hii ni hati rasmi ya ByaoConnect PWA. Inafanya kazi kwenye simu yako kama application kamili bila kuhitaji intaneti wakati wowote.</p>
+                        </div>
+
+                        <!-- Eneo la Picha Iliyopakiwa -->
+                        <div id="previewImageContainer" class="hidden my-4 text-center">
+                            <img id="previewUploadedImg" src="" alt="Picha ya Hati" class="max-h-48 mx-auto rounded-xl border border-slate-800 shadow-md">
+                        </div>
+
+                        <!-- Mfano wa Jedwali (Table) -->
+                        <div class="space-y-2">
+                            <h4 class="text-[11px] font-bold uppercase tracking-wider text-indigo-400">Jedwali la Uchambuzi wa Data (Table):</h4>
+                            <div class="overflow-x-auto border border-slate-800 rounded-xl">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-slate-950 text-slate-300 uppercase text-[10px] border-b border-slate-800">
+                                        <tr>
+                                            <th class="p-2.5">Na.</th>
+                                            <th class="p-2.5">Kipengele cha Mfumo</th>
+                                            <th class="p-2.5">Hali</th>
+                                            <th class="p-2.5">Kiwango</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dynamicTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                                        <tr>
+                                            <td class="p-2.5 font-mono">01</td>
+                                            <td class="p-2.5 font-bold text-white">ByaoConnect App Shell</td>
+                                            <td class="p-2.5 text-emerald-400">Tayari Mkononi</td>
+                                            <td class="p-2.5">100%</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-2.5 font-mono">02</td>
+                                            <td class="p-2.5 font-bold text-white">PDF & Docs Studio</td>
+                                            <td class="p-2.5 text-emerald-400">Inafanya Kazi</td>
+                                            <td class="p-2.5">99%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="pt-6 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500 font-medium">
+                            <span>ByaoConnect PWA Engine v5.6</span>
+                            <span>Ukurasa wa 1 / 1</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 2: ZANA 10 ZA ZIADA -->
+        <div id="module-tools10" class="space-y-4 hidden flex-col">
+            <div class="bg-cardBg border border-slate-800/80 p-4 sm:p-6 rounded-2xl shadow-xl space-y-4">
+                <div class="border-b border-slate-800 pb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400">⚡ Zana 10 za Kitalamu za Uandishi na Uchakataji</h3>
+                    <p class="text-[10px] text-slate-400">Gusa zana yoyote hapa chini kuitumia kwenye hati yako.</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div onclick="applyWritingTool(1)" class="bg-slate-950 border border-slate-900 hover:border-emerald-500/50 p-3.5 rounded-xl cursor-pointer transition">
+                        <h4 class="text-xs font-bold text-white">1. Auto Bullet Points</h4>
+                        <p class="text-[10px] text-slate-400">Badilisha aya ziwe nukta zenye mpangilio.</p>
+                    </div>
+                    <div onclick="applyWritingTool(2)" class="bg-slate-950 border border-slate-900 hover:border-emerald-500/50 p-3.5 rounded-xl cursor-pointer transition">
+                        <h4 class="text-xs font-bold text-white">2. Executive Summary</h4>
+                        <p class="text-[10px] text-slate-400">Ongeza muhtasari wa kiofisi kwenye hati.</p>
+                    </div>
+                    <div onclick="applyWritingTool(3)" class="bg-slate-950 border border-slate-900 hover:border-emerald-500/50 p-3.5 rounded-xl cursor-pointer transition">
+                        <h4 class="text-xs font-bold text-white">3. Signature & Stamp Box</h4>
+                        <p class="text-[10px] text-slate-400">Ongeza sehemu ya saini na muhuri rasmi.</p>
+                    </div>
+                    <div onclick="applyWritingTool(4)" class="bg-slate-950 border border-slate-900 hover:border-emerald-500/50 p-3.5 rounded-xl cursor-pointer transition">
+                        <h4 class="text-xs font-bold text-white">4. Smart Table Row Adder</h4>
+                        <p class="text-[10px] text-slate-400">Ongeza mstari mpya kwenye jedwali la data.</p>
+                    </div>
+                    <div onclick="applyWritingTool(5)" class="bg-slate-950 border border-slate-900 hover:border-emerald-500/50 p-3.5 rounded-xl cursor-pointer transition">
+                        <h4 class="text-xs font-bold text-white">5. Dynamic Watermark</h4>
+                        <p class="text-[10px] text-slate-400">Weka alama ya byao-connect kwenye PDF.</p>
+                    </div>
+                    <div onclick="applyWritingTool(6)" class="bg-slate-950 border border-slate-900 hover:border-emerald-500/50 p-3.5 rounded-xl cursor-pointer transition">
+                        <h4 class="text-xs font-bold text-white">6. Font Size Scaler</h4>
+                        <p class="text-[10px] text-slate-400">Rekebisha ukubwa wa maandishi.</p>
+                    </div>
+                    <div onclick="applyWritingTool(7)" class="bg-slate-950 border border-slate-900 hover:border-emerald-500/50 p-3.5 rounded-xl cursor-pointer transition">
+                        <h4 class="text-xs font-bold text-white">7. Clean Text Sanitizer</h4>
+                        <p class="text-[10px] text-slate-400">Ondoa makosa au alama za ziada.</p>
+                    </div>
+                    <div onclick="applyWritingTool(8)" class="bg-slate-950 border border-slate-900 hover:border-emerald-500/50 p-3.5 rounded-xl cursor-pointer transition">
+                        <h4 class="text-xs font-bold text-white">8. Theme Switcher</h4>
+                        <p class="text-[10px] text-slate-400">Badilisha mfumo wa rangi wa hati.</p>
+                    </div>
+                    <div onclick="applyWritingTool(9)" class="bg-slate-950 border border-slate-900 hover:border-emerald-500/50 p-3.5 rounded-xl cursor-pointer transition">
+                        <h4 class="text-xs font-bold text-white">9. QR Verification Badge</h4>
+                        <p class="text-[10px] text-slate-400">Weka nembo ya uhakiki wa kidijitali.</p>
+                    </div>
+                    <div onclick="applyWritingTool(10)" class="bg-slate-950 border border-slate-900 hover:border-emerald-500/50 p-3.5 rounded-xl cursor-pointer transition">
+                        <h4 class="text-xs font-bold text-white">10. Master ZIP Archiver</h4>
+                        <p class="text-[10px] text-slate-400">Hifadhi nyaraka zote pamoja kwenye kifurushi.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 3: PWA SETTINGS & INFO -->
+        <div id="module-pwasettings" class="space-y-4 hidden flex-col">
+            <div class="bg-cardBg border border-slate-800/80 p-4 sm:p-6 rounded-2xl shadow-xl space-y-4">
+                <div class="border-b border-slate-800 pb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-400">⚙️ Hali ya App Kwenye Simu Yako (PWA Status)</h3>
+                    <p class="text-[10px] text-slate-400">Jinsi ya kuhakikisha ByaoConnect inakaa mkononi mwako kama App kamili.</p>
+                </div>
+                <div class="bg-slate-950 border border-slate-900 p-4 rounded-xl space-y-3 text-xs text-slate-300">
+                    <p class="font-bold text-white">📌 Hatua za Kuweka App kwenye Home Screen:</p>
+                    <ul class="list-disc pl-5 space-y-1.5 text-[11px] text-slate-400">
+                        <li>Fungua app hii kupitia kivinjari cha Chrome kwenye simu yako ya Android au Safari kwenye iPhone.</li>
+                        <li>Gusa nukta tatu (Menu) za juu kulia kwenye Chrome au kitufe cha Kushiriki (Share) kwenye iPhone.</li>
+                        <li>Chagua chaguo la <strong class="text-white">"Add to Home Screen"</strong> au <strong class="text-white">"Install App"</strong>.</li>
+                        <li>Logo yako ya <code class="text-red-400 font-mono">byao-connect.png</code> itatokea kwenye simu yako na utaiamka nayo moja kwa moja!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Console Log -->
+        <div class="bg-cardBg border border-slate-800/80 p-4 rounded-2xl shadow-xl space-y-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">System Log:</span>
+            <pre class="bg-slate-950 p-3 rounded-xl border border-slate-900 text-[11px] text-emerald-300 font-mono max-h-24 overflow-y-auto"><code id="systemConsole">// ByaoConnect PWA v5.6 imewekwa sawa na Logo ya byao-connect.png imeunganishwa.</code></pre>
+        </div>
+    </main>
+
+    <!-- PWA Install Prompt Script -->
+    <script>
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            let installBtn = document.getElementById('installPWA-btn');
+            if(installBtn) installBtn.classList.remove('hidden');
+            logSys('PWA iko tayari kusakinishwa kwenye simu.');
+        });
+
+        function installPWAApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        logSys('Mtumiaji amekubali kusakinisha ByaoConnect PWA.');
+                        showNotification('App imewekwa kwenye simu yako!');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        function logSys(msg) {
+            let consoleBox = document.getElementById('systemConsole');
+            if(consoleBox) {
+                consoleBox.innerText += `\n> ${msg}`;
+                consoleBox.scrollTop = consoleBox.scrollHeight;
+            }
+        }
+
+        function showNotification(msg) {
+            let toast = document.getElementById('toastNotification');
+            if(toast) {
+                toast.innerText = msg;
+                toast.classList.remove('hidden');
+                setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+            }
+        }
+
+        function switchTab(tabId) {
+            ['editor', 'tools10', 'pwasettings'].forEach(t => {
+                let el = document.getElementById(`module-${t}`);
+                if(el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+                let btn = document.getElementById(`tabBtn-${t}`);
+                if(btn) btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 hover:bg-slate-800 transition whitespace-nowrap';
+            });
+            let targetEl = document.getElementById(`module-${tabId}`);
+            if(targetEl) { targetEl.classList.remove('hidden'); targetEl.classList.add('flex'); }
+            let targetBtn = document.getElementById(`tabBtn-${tabId}`);
+            if(targetBtn) targetBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-red-600 text-white transition shadow-md whitespace-nowrap';
+            logSys(`Moduli imebadilishwa kwenda: ${tabId.toUpperCase()}`);
+        }
+
+        function updateLivePreview() {
+            let titleVal = document.getElementById('docTitle').value;
+            let colorVal = document.getElementById('docTitleColor').value;
+            let bodyVal = document.getElementById('docBody').value;
+
+            let titleEl = document.getElementById('previewTitle');
+            titleEl.innerText = titleVal.toUpperCase();
+            titleEl.className = `text-xl font-black uppercase tracking-tight ${colorVal}`;
+            document.getElementById('previewBody').innerText = bodyVal;
+        }
+
+        function insertImageIntoDoc(event) {
+            let file = event.target.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    let imgContainer = document.getElementById('previewImageContainer');
+                    let imgEl = document.getElementById('previewUploadedImg');
+                    imgEl.src = e.target.result;
+                    imgContainer.classList.remove('hidden');
+                    logSys('Picha imeingizwa kwenye hati kwa mafanikio!');
+                    showNotification('Picha imepakiwa kwenye hati!');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function loadExternalPDF(event) {
+            let file = event.target.files[0];
+            if (!file) return;
+            
+            logSys(`Inasoma faili la PDF: ${file.name}...`);
+            showNotification('Inasoma PDF ya ndani...');
+
+            let reader = new FileReader();
+            reader.onload = function() {
+                let typedarray = new Uint8Array(this.result);
+                
+                pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+                    pdf.getPage(1).then(function(page) {
+                        page.getTextContent().then(function(textContent) {
+                            let textItems = textContent.items.map(item => item.str);
+                            let extractedText = textItems.join(' ');
+                            
+                            document.getElementById('docTitle').value = file.name.replace('.pdf', '');
+                            document.getElementById('docBody').value = extractedText.substring(0, 800) + '...';
+                            updateLivePreview();
+                            
+                            logSys('PDF ya ndani imesomwa na kuwekwa kwenye kihariri!');
+                            showNotification('PDF imefunguliwa na kuingizwa kwenye mfumo!');
+                        });
+                    });
+                }).catch(error => {
+                    logSys('Hitilafu katika kusoma PDF: ' + error);
+                    showNotification('Imeshindikana kusoma PDF.');
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function generatePDFDocument() {
+            let element = document.getElementById('pdfContentArea');
+            let opt = {
+                margin:       0.4,
+                filename:     'ByaoConnect_Document.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#030712' },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            logSys('Inatengeneza faili safi la PDF...');
+            showNotification('Inapakua PDF tafadhali subiri...');
+
+            html2pdf().from(element).set(opt).save().then(() => {
+                logSys('Faili la PDF limetengenezwa na kupakuliwa kwa mafanikio!');
+                showNotification('PDF imeshapakuliwa kwenye simu yako!');
+            }).catch(err => {
+                logSys('Hitilafu katika kutengeneza PDF: ' + err);
+                showNotification('Imeshindikana kutengeneza PDF.');
+            });
+        }
+
+        function applyWritingTool(toolId) {
+            logSys(`Zana ya uandishi #${toolId} imetumika kwenye hati.`);
+            showNotification(`Zana #${toolId} imewashwa kikamilifu!`);
+            
+            if(toolId === 3) {
+                let body = document.getElementById('docBody');
+                body.value += "\n\n______________________________\nSAINI RASMI & MUHURI WA BYAOCONNECT";
+                updateLivePreview();
+            } else if(toolId === 4) {
+                let tbody = document.getElementById('dynamicTableBody');
+                let newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="p-2.5 font-mono">03</td>
+                    <td class="p-2.5 font-bold text-white">ByaoConnect Custom Module</td>
+                    <td class="p-2.5 text-emerald-400">Imetoka Kuongezwa</td>
+                    <td class="p-2.5">99%</td>
+                `;
+                tbody.appendChild(newRow);
+            }
+        }
+    </script>
+</body>
+</html>
+
+
